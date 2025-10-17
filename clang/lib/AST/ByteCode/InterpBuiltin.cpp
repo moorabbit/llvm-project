@@ -3101,6 +3101,57 @@ static bool interp__builtin_vec_set(InterpState &S, CodePtr OpPC,
   return true;
 }
 
+static bool interp__builtin_cmp_mask(InterpState &S, CodePtr OpPC,
+                                    const CallExpr *Call, unsigned ID) {
+  assert(Call->getNumArgs() == 4);
+
+  APSInt Mask = popToAPSInt(S, Call->getArg(3));
+  APSInt Opcode = popToAPSInt(S, Call->getArg(2));
+  const Pointer &LHS = S.Stk.pop<Pointer>();
+  const Pointer &RHS = S.Stk.pop<Pointer>();
+
+  assert(LHS.getNumElems() == RHS.getNumElems());
+
+  enum {
+    _MM_CMPINT_EQ,
+    _MM_CMPINT_LT,
+    _MM_CMPINT_LE,
+    _MM_CMPINT_FALSE,
+    _MM_CMPINT_NE,
+    _MM_CMPINT_NLT,
+    _MM_CMPINT_NLE,
+    _MM_CMPINT_TRUE
+  };
+
+  APInt RetMask;
+  unsigned VectorLen = LHS.getNumElems();
+  PrimType ElemT = LHS.getFieldDesc()->getPrimType();
+
+  switch (Opcode.getExtValue()) {
+    //case _MM_CMPINT_EQ:
+    //case _MM_CMPINT_LT:
+    //case _MM_CMPINT_LE:
+    //case _MM_CMPINT_FALSE:
+    case _MM_CMPINT_NE: {
+        INT_TYPE_SWITCH_NO_BOOL(ElemT, {
+          for (unsigned ElemNum = 0; ElemNum < VectorLen; ++ElemNum) {
+            RetMask.setBitVal(ElemNum, Mask[ElemNum] && (LHS.elem<T>(ElemNum).toAPSInt() != RHS.elem<T>(ElemNum).toAPSInt()));
+          }
+        });
+      break;
+    }
+    //case _MM_CMPINT_NLT:
+    //case _MM_CMPINT_NLE:
+    //case _MM_CMPINT_TRUE:
+    default: 
+      llvm_unreachable("Invalid comparison op");
+  }
+
+  pushInteger(S, RetMask, Call->getType());
+  return true;
+
+}
+
 static bool interp__builtin_ia32_vpconflict(InterpState &S, CodePtr OpPC,
                                             const CallExpr *Call) {
   assert(Call->getNumArgs() == 1);
@@ -4140,6 +4191,9 @@ bool InterpretBuiltin(InterpState &S, CodePtr OpPC, const CallExpr *Call,
   case X86::BI__builtin_ia32_vec_set_v8si:
   case X86::BI__builtin_ia32_vec_set_v4di:
     return interp__builtin_vec_set(S, OpPC, Call, BuiltinID);
+
+  case X86::BI__builtin_ia32_cmpb128_mask:
+    return interp__builtin_cmp_mask(S, OpPC, Call, BuiltinID);
 
   default:
     S.FFDiag(S.Current->getLocation(OpPC),

@@ -15449,6 +15449,51 @@ bool IntExprEvaluator::VisitBuiltinCallExpr(const CallExpr *E,
     unsigned Idx = static_cast<unsigned>(IdxAPS.getZExtValue() & (N - 1));
     return Success(Vec.getVectorElt(Idx).getInt(), E);
   }
+  
+  case clang::X86::BI__builtin_ia32_cmpb128_mask: {
+    enum {
+      _MM_CMPINT_EQ,
+      _MM_CMPINT_LT,
+      _MM_CMPINT_LE,
+      _MM_CMPINT_FALSE,
+      _MM_CMPINT_NE,
+      _MM_CMPINT_NLT,
+      _MM_CMPINT_NLE,
+      _MM_CMPINT_TRUE
+    };
+
+    APValue LHS, RHS;
+    APSInt Opcode, Mask, RetMask;
+    if (!EvaluateVector(E->getArg(0), LHS, Info) ||
+        !EvaluateVector(E->getArg(1), RHS, Info) ||
+        !EvaluateInteger(E->getArg(2), Opcode, Info) ||
+        !EvaluateInteger(E->getArg(3), Mask, Info))
+      return false;
+
+    assert(LHS.getVectorLength() == RHS.getVectorLength());
+    unsigned VectorLen = LHS.getVectorLength();
+
+    switch (Opcode.getExtValue()) {
+      //case _MM_CMPINT_EQ:
+      //case _MM_CMPINT_LT:
+      //case _MM_CMPINT_LE:
+      //case _MM_CMPINT_FALSE:
+      case _MM_CMPINT_NE: {
+        for (unsigned ElemNum = 0; ElemNum < VectorLen; ++ElemNum) {
+            RetMask.setBitVal(ElemNum, Mask[ElemNum] && (LHS.getVectorElt(ElemNum).getInt() != RHS.getVectorElt(ElemNum).getInt()));
+        } 
+        break;
+      }
+      //case _MM_CMPINT_NLT:
+      //case _MM_CMPINT_NLE:
+      //case _MM_CMPINT_TRUE:
+      default: 
+        llvm_unreachable("Invalid comparison op");
+    }
+
+    RetMask.setIsUnsigned(true);
+    return Success(APValue(RetMask), E);
+  }
   }
 }
 

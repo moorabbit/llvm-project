@@ -1272,7 +1272,7 @@ let Features = "avx512bw", Attributes = [NoThrow, Const, Constexpr] in {
   def knotdi : X86Builtin<"unsigned long long int(unsigned long long int)">;
 }
 
-let Features = "avx512vl,avx512bw", Attributes = [NoThrow, Const, RequiredVectorWidth<128>] in {
+let Features = "avx512vl,avx512bw", Attributes = [NoThrow, Const, Constexpr, RequiredVectorWidth<128>] in {
   def cmpb128_mask : X86Builtin<"unsigned short(_Vector<16, char>, _Vector<16, char>, _Constant int, unsigned short)">;
 }
 

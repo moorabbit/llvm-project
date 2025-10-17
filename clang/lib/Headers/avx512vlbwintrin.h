@@ -2385,7 +2385,7 @@ _mm256_mask_storeu_epi8 (void *__P, __mmask32 __U, __m256i __A)
              (__mmask32) __U);
 }
 
-static __inline__ __mmask16 __DEFAULT_FN_ATTRS128
+static __inline__ __mmask16 __DEFAULT_FN_ATTRS128_CONSTEXPR
 _mm_test_epi8_mask (__m128i __A, __m128i __B)
 {
   return _mm_cmpneq_epi8_mask (_mm_and_si128(__A, __B), _mm_setzero_si128());

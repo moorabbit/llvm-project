@@ -2890,6 +2890,12 @@ __mmask16 test_mm_test_epi8_mask(__m128i __A, __m128i __B) {
   return _mm_test_epi8_mask(__A, __B); 
 }
 
+TEST_CONSTEXPR(_mm_test_epi8_mask(
+    (__m128i)(__v16qi){1, 2, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+    (__m128i)(__v16qi){1, 2, 4, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+)
+== (__mmask16)0xfffb);
+
 __mmask16 test_mm_mask_test_epi8_mask(__mmask16 __U, __m128i __A, __m128i __B) {
   // CHECK-LABEL: test_mm_mask_test_epi8_mask
   // CHECK: and <2 x i64> %{{.*}}, %{{.*}}
